@@ -36,3 +36,16 @@ install_deps:
 	make -j8 && make install && sudo ldconfig
 
 deps: download_deps install_deps
+
+clean:
+	rm -rf build
+
+build:
+	mkdir build
+	cd build && cmake .. && make -j4
+
+client:
+	./build/client 
+
+server:
+	./build/server

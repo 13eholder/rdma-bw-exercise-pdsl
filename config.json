@@ -1,0 +1,8 @@
+{
+    "client": {
+        "device": "mlx4_0"
+    },
+    "server": {
+        "device": "mlx4_0"
+    }
+}

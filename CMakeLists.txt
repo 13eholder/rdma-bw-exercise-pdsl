@@ -1,14 +1,20 @@
 cmake_minimum_required(VERSION 3.10)
 project(rdma-bw-exercise-pdsl VERSION 0.1.0)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(CMAKE_BUILD_TYPE Release)
-set(CMAKE_CXX_COMPILER g++)
-set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O2")
+set(CMAKE_BUILD_TYPE Debug)
 
-include_directories(${CMAKE_SOURCE_DIR}/deps/install/include)
+# set(CMAKE_BUILD_TYPE Release)
+set(CMAKE_CXX_COMPILER g++)
+
+# set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O2")
+set(DEPS_PREFIX ${CMAKE_SOURCE_DIR}/deps)
+set(CMAKE_PREFIX_PATH ${DEPS_PREFIX}/install)
+include_directories(${DEPS_PREFIX}/install/include)
 
 find_package(fmt REQUIRED)
 find_package(jsoncpp REQUIRED)
