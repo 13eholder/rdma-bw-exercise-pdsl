@@ -16,7 +16,7 @@ public:
     RdmaServer(jsonrpc::TcpSocketServer &server, const RdmaConfig &config)
         : jsonrpc::AbstractServer<RdmaServer>(server), server_ctx_(config)
     {
-        this->bindAndAddMethod(jsonrpc::Procedure("ExchangeQP", jsonrpc::PARAMS_BY_NAME, nullptr),
+        this->bindAndAddMethod(jsonrpc::Procedure("ExchangeQP", jsonrpc::PARAMS_BY_NAME, jsonrpc::JSON_STRING, nullptr),
                                &RdmaServer::ExchangeQP);
     }
     void ExchangeQP(const Json::Value &request, Json::Value &response)
@@ -45,6 +45,7 @@ int main()
 {
     auto config = InitConifg(RdmaType::kServer);
 
+    fmt::println("TcpServer listen to ip {}, port {}", config.ip, config.port);
     jsonrpc::TcpSocketServer tcp_server(config.ip, config.port);
     RdmaServer server(tcp_server, config);
 

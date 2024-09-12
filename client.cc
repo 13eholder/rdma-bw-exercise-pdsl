@@ -21,6 +21,8 @@ int main()
     QPInfo remote_qp_info;
     QPInfo local_qp_info = {.lid = client_ctx.port_attr_.lid, .qp_num = client_ctx.qp_->qp_num};
 
+    fmt::println("TcpClient connect to ip {}, port {}", config.ip, config.port);
+
     jsonrpc::TcpSocketClient tcp_client(config.ip, config.port);
     jsonrpc::Client client(tcp_client);
 

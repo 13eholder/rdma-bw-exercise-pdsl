@@ -50,7 +50,7 @@ RdmaConfig InitConifg(RdmaType type)
                  "config.json.server must have field 'device' and 'port' ");
         conf.device = server_conf["device"].asString();
         conf.port = server_conf["port"].asInt();
-        conf.ip = "127.0.0.1";
+        conf.ip = "192.168.1.41";
     }
     return conf;
 }
@@ -120,6 +120,7 @@ RdmaContext::RdmaContext(const RdmaConfig& config)
         dev++;
     }
     ErrCheck(*dev == nullptr, fmt::format("no such device named {}", config.device).c_str());
+    fmt::println("use ib device {},port {}", config.device, config.port);
     // Open IB device
     ctx_ = ibv_open_device(*dev);
     ErrCheck(ctx_ == nullptr, "Failed to open device");
@@ -147,7 +148,8 @@ RdmaContext::RdmaContext(const RdmaConfig& config)
         .max_send_sge = 1,
         .max_recv_sge = 1,
     };
-    ibv_qp_init_attr qp_init_attr = {.send_cq = cq_, .recv_cq = cq_, .srq = nullptr, .cap = qp_cap};
+    ibv_qp_init_attr qp_init_attr = {
+        .send_cq = cq_, .recv_cq = cq_, .srq = nullptr, .cap = qp_cap, .qp_type = IBV_QPT_RC};
     qp_ = ibv_create_qp(pd_, &qp_init_attr);
     ErrCheck(qp_ == nullptr, "Failed to create qp");
 }
