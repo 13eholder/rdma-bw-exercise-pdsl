@@ -16,11 +16,6 @@
 int main()
 {
 	auto config = InitConifg(RdmaType::kClient);
-	RdmaContext client_ctx(config);
-
-	QPInfo remote_qp_info;
-	QPInfo local_qp_info = { .lid = client_ctx.port_attr_.lid,
-				 .qp_num = client_ctx.qp_->qp_num };
 
 	fmt::println("TcpClient connect to ip {}, port {}", config.ip,
 		     config.port);
@@ -29,12 +24,24 @@ int main()
 	jsonrpc::Client client(tcp_client);
 
 	try {
-		auto value = local_qp_info.toJson();
-		auto resp = client.CallMethod("ExchangeQP", value);
+		RdmaContext client_ctx(config);
+
+		QPInfo remote_qp_info;
+		QPInfo local_qp_info = { .lid = client_ctx.port_attr_.lid,
+					 .qp_num = client_ctx.qp_->qp_num,
+					 .gid_index = kGidIndex };
+		ibv_query_gid(client_ctx.ctx_, kIBPort, kGidIndex,
+			      &local_qp_info.gid);
+
+		auto req = local_qp_info.toJson();
+		fmt::println(
+			"Client transport QPInfo:\n\tlid={}\n\tqp_num={}\n\tgid={}\n\tgid_index={}",
+			local_qp_info.lid, local_qp_info.qp_num,
+			GidToStr(local_qp_info.gid), local_qp_info.gid_index);
+		auto resp = client.CallMethod("ExchangeQP", req);
 		remote_qp_info = QPInfo::parseJson(resp);
 		// modify qp to rts
-		RdmaModifyQp2Rts(client_ctx.qp_, remote_qp_info.qp_num,
-				 remote_qp_info.lid);
+		RdmaModifyQp2Rts(client_ctx.qp_, local_qp_info, remote_qp_info);
 		// post  a list of work requests to a send queue
 		for (int i = 0; i < kMsgNum; i++) {
 			ibv_send_wr *bad_send_wr;

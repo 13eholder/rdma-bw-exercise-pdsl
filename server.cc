@@ -25,8 +25,19 @@ class RdmaServer : public jsonrpc::AbstractServer<RdmaServer> {
 	void ExchangeQP(const Json::Value &request, Json::Value &response)
 	{
 		auto remote_qp_info = QPInfo::parseJson(request);
-		RdmaModifyQp2Rts(server_ctx_.qp_, remote_qp_info.qp_num,
-				 remote_qp_info.lid);
+		fmt::println(
+			"Server receive QPInfo:\n\tlid={}\n\tqp_num={}\n\tgid={}\n\tgid_index={}",
+			remote_qp_info.lid, remote_qp_info.qp_num,
+			GidToStr(remote_qp_info.gid), remote_qp_info.gid_index);
+		//
+		QPInfo local_qp_info = { .lid = server_ctx_.port_attr_.lid,
+					 .qp_num = server_ctx_.qp_->qp_num };
+		local_qp_info.gid_index = kGidIndex;
+		ibv_query_gid(server_ctx_.ctx_, kIBPort, kGidIndex,
+			      &local_qp_info.gid);
+
+		RdmaModifyQp2Rts(server_ctx_.qp_, local_qp_info,
+				 remote_qp_info);
 		// send work request to recv queue
 		for (int i = 0; i < kMsgNum; i++) {
 			ibv_recv_wr *bad_recv_wr = nullptr;
@@ -41,11 +52,10 @@ class RdmaServer : public jsonrpc::AbstractServer<RdmaServer> {
 						.num_sge = 1 };
 			ibv_post_recv(server_ctx_.qp_, &recv_wr, &bad_recv_wr);
 		}
-		//
-		QPInfo local_qp_info = { .lid = server_ctx_.port_attr_.lid,
-					 .qp_num = server_ctx_.qp_->qp_num };
 		response["lid"] = local_qp_info.lid;
 		response["qp_num"] = local_qp_info.qp_num;
+		response["gid_index"] = local_qp_info.gid_index;
+		response["gid"] = GidToStr(local_qp_info.gid);
 	}
 
 	~RdmaServer() override

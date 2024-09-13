@@ -6,12 +6,15 @@
 #include <json/config.h>
 #include <json/reader.h>
 #include <json/value.h>
+#include <sstream>
+#include <string>
 #include <sys/types.h>
 
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <vector>
 
 void ErrCheck(bool cond, const char *msg)
 {
@@ -62,7 +65,8 @@ RdmaConfig InitConifg(RdmaType type)
 	return conf;
 }
 
-void RdmaModifyQp2Rts(ibv_qp *qp, uint32_t target_qp_num, uint16_t target_lid)
+void RdmaModifyQp2Rts(ibv_qp *qp, const QPInfo &local_info,
+		      const QPInfo &remote_info)
 {
 	int ret = 0;
 
@@ -88,11 +92,11 @@ void RdmaModifyQp2Rts(ibv_qp *qp, uint32_t target_qp_num, uint16_t target_lid)
 	{
 		ibv_qp_attr qp_attr = {
 			.qp_state = IBV_QPS_RTR,
-			.path_mtu = IBV_MTU_4096,
+			.path_mtu = IBV_MTU_1024,
 			// receivce queue package serial num
 			.rq_psn = 0,
-			.dest_qp_num = target_qp_num,
-			.ah_attr = { .dlid = target_lid,
+			.dest_qp_num = remote_info.qp_num,
+			.ah_attr = { .dlid = remote_info.lid,
 				     .sl = kIBSL,
 				     .src_path_bits = 0,
 				     .is_global = 0,
@@ -100,6 +104,14 @@ void RdmaModifyQp2Rts(ibv_qp *qp, uint32_t target_qp_num, uint16_t target_lid)
 			.max_dest_rd_atomic = 1,
 			.min_rnr_timer = 12,
 		};
+		if (remote_info.lid == 0) {
+			qp_attr.ah_attr.is_global = 1;
+			qp_attr.ah_attr.grh.sgid_index = local_info.gid_index;
+			qp_attr.ah_attr.grh.dgid = remote_info.gid;
+			qp_attr.ah_attr.grh.hop_limit = 0xFF;
+			qp_attr.ah_attr.grh.traffic_class = 0;
+			qp_attr.ah_attr.grh.flow_label = 0;
+		}
 		ret = ibv_modify_qp(qp, &qp_attr,
 				    IBV_QP_STATE | IBV_QP_AV | IBV_QP_PATH_MTU |
 					    IBV_QP_DEST_QPN | IBV_QP_RQ_PSN |
@@ -127,7 +139,7 @@ void RdmaModifyQp2Rts(ibv_qp *qp, uint32_t target_qp_num, uint16_t target_lid)
 					    IBV_QP_RETRY_CNT |
 					    IBV_QP_RNR_RETRY | IBV_QP_SQ_PSN |
 					    IBV_QP_MAX_QP_RD_ATOMIC);
-		ErrCheck(ret == 0, "Failed to modify qp to RTS.");
+		ErrCheck(ret != 0, "Failed to modify qp to RTS.");
 	}
 }
 
@@ -193,4 +205,41 @@ RdmaContext::~RdmaContext()
 	ibv_close_device(ctx_);
 	ibv_free_device_list(dev_list_);
 	free(buf_);
+}
+
+[[nodiscard]] Json::Value QPInfo::toJson() const
+{
+	Json::Value value;
+	value["lid"] = lid;
+	value["qp_num"] = qp_num;
+	value["gid"] = GidToStr(gid);
+	value["gid_index"] = gid_index;
+	return value;
+}
+
+QPInfo QPInfo::parseJson(const Json::Value &v)
+{
+	return { .lid = static_cast<uint16_t>(v["lid"].asInt()),
+		 .qp_num = static_cast<uint32_t>(v["qp_num"].asInt()),
+		 .gid = StrToGid(v["gid"].asString()),
+		 .gid_index = v["gid_index"].asInt() };
+}
+
+std::string GidToStr(const ibv_gid &gid)
+{
+	return fmt::format("{}.{}", gid.global.interface_id,
+			   gid.global.subnet_prefix);
+}
+ibv_gid StrToGid(const std::string &str)
+{
+	std::stringstream ss(str);
+	std::vector<std::string> tokens;
+	std::string token;
+	while (std::getline(ss, token, '.')) {
+		tokens.push_back(token);
+	}
+	ibv_gid gid;
+	gid.global.interface_id = std::stoull(tokens[0]);
+	gid.global.subnet_prefix = std::stoull(tokens[1]);
+	return gid;
 }

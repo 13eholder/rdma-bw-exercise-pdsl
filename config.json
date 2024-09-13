@@ -1,11 +1,11 @@
 {
     "client": {
         "device": "mlx4_0",
-        "port": 12306,
+        "port": 7897,
         "ip": "192.168.1.41"
     },
     "server": {
         "device": "mlx4_0",
-        "port": 12306
+        "port": 7897
     }
 }
