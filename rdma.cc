@@ -60,7 +60,7 @@ RdmaConfig InitConifg(RdmaType type)
 			"config.json.server must have field 'device' and 'port' ");
 		conf.device = server_conf["device"].asString();
 		conf.port = server_conf["port"].asInt();
-		conf.ip = "192.168.1.41";
+		conf.ip = "0.0.0.0";
 	}
 	return conf;
 }
@@ -79,7 +79,7 @@ void RdmaModifyQp2Rts(ibv_qp *qp, const QPInfo &local_info,
 					   IBV_ACCESS_REMOTE_WRITE |
 					   IBV_ACCESS_REMOTE_ATOMIC,
 			.pkey_index = 0,
-			.port_num = kIBPort,
+			.port_num = kDefaultPort,
 		};
 
 		ret = ibv_modify_qp(qp, &qp_attr,
@@ -97,13 +97,14 @@ void RdmaModifyQp2Rts(ibv_qp *qp, const QPInfo &local_info,
 			.rq_psn = 0,
 			.dest_qp_num = remote_info.qp_num,
 			.ah_attr = { .dlid = remote_info.lid,
-				     .sl = kIBSL,
+				     .sl = kDefaultServiceLevel,
 				     .src_path_bits = 0,
 				     .is_global = 0,
-				     .port_num = kIBPort },
+				     .port_num = kDefaultPort },
 			.max_dest_rd_atomic = 1,
 			.min_rnr_timer = 12,
 		};
+		//这表示远程节点的LID（Local Identifier）是 0，通常意味着需要使用全局标识符（GID）而不是LID进行通信。LID是Infiniband子网内的本地地址，当跨子网通信或使用RoCE时，LID不适用，因此会用GID和GRH
 		if (remote_info.lid == 0) {
 			qp_attr.ah_attr.is_global = 1;
 			qp_attr.ah_attr.grh.sgid_index = local_info.gid_index;
@@ -164,7 +165,7 @@ RdmaContext::RdmaContext(const RdmaConfig &config)
 	pd_ = ibv_alloc_pd(ctx_);
 	ErrCheck(pd_ == nullptr, "Failed to alloc protection domain");
 	// query IB port attribute
-	ErrCheck(ibv_query_port(ctx_, kIBPort, &port_attr_) != 0,
+	ErrCheck(ibv_query_port(ctx_, kDefaultPort, &port_attr_) != 0,
 		 "Failed to query port info");
 	// alloc buf
 	buf_ = static_cast<char *>(std::aligned_alloc(4096, kBufSize));

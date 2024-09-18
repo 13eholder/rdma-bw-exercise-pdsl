@@ -32,8 +32,8 @@ class RdmaServer : public jsonrpc::AbstractServer<RdmaServer> {
 		//
 		QPInfo local_qp_info = { .lid = server_ctx_.port_attr_.lid,
 					 .qp_num = server_ctx_.qp_->qp_num };
-		local_qp_info.gid_index = kGidIndex;
-		ibv_query_gid(server_ctx_.ctx_, kIBPort, kGidIndex,
+		local_qp_info.gid_index = kDefaultGidIndex;
+		ibv_query_gid(server_ctx_.ctx_, kDefaultPort, kDefaultGidIndex,
 			      &local_qp_info.gid);
 
 		RdmaModifyQp2Rts(server_ctx_.qp_, local_qp_info,

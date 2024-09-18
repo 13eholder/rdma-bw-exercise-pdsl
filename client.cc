@@ -29,8 +29,8 @@ int main()
 		QPInfo remote_qp_info;
 		QPInfo local_qp_info = { .lid = client_ctx.port_attr_.lid,
 					 .qp_num = client_ctx.qp_->qp_num,
-					 .gid_index = kGidIndex };
-		ibv_query_gid(client_ctx.ctx_, kIBPort, kGidIndex,
+					 .gid_index = kDefaultGidIndex };
+		ibv_query_gid(client_ctx.ctx_, kDefaultPort, kDefaultGidIndex,
 			      &local_qp_info.gid);
 
 		auto req = local_qp_info.toJson();

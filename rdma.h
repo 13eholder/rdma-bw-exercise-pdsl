@@ -10,11 +10,10 @@ static const std::string kConfigPath = "config.json";
 static constexpr uint32_t kMsgSize = 4 * 1024 * 1024; // 4MB
 static constexpr uint32_t kMsgNum = 64;
 static constexpr uint32_t kBufSize = kMsgSize * kMsgNum;
-static constexpr int kQpNum = 1;
-static constexpr uint8_t kIBPort = 1;
-static constexpr uint8_t kIBSL = 0;
+static constexpr uint8_t kDefaultPort = 1;
+static constexpr int kDefaultGidIndex = 0;
+static constexpr uint8_t kDefaultServiceLevel = 0;
 static constexpr uint32_t kMaxPollSize = 16;
-static constexpr int kGidIndex = 0;
 
 // 结构体
 struct RdmaConfig {
@@ -31,24 +30,7 @@ struct QPInfo {
 	ibv_gid gid;
 	int gid_index;
 	[[nodiscard]] Json::Value toJson() const;
-	// {
-	// 	Json::Value value;
-	// 	value["lid"] = lid;
-	// 	value["qp_num"] = qp_num;
-	// 	value["gid"] = GidToStr(gid);
-	// 	value["gid_index"] = gid_index;
-	// 	return value;
-	// }
-
 	static QPInfo parseJson(const Json::Value &v);
-	// {
-	// 	ibv_gid gid;
-	// 	memcpy(gid.raw, v["gid"].asCString(), 16);
-	// 	return { .lid = static_cast<uint16_t>(v["lid"].asInt()),
-	// 		 .qp_num = static_cast<uint32_t>(v["qp_num"].asInt()),
-	// 		 .gid = gid,
-	// 		 .gid_index = v["gid_index"].asInt() };
-	// }
 };
 
 class RdmaContext {
