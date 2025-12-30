@@ -1,0 +1,1 @@
+(cd ../third_party/json-rpc-cxx && patch -p1 < ../../fix_json_literal_operator.patch)
